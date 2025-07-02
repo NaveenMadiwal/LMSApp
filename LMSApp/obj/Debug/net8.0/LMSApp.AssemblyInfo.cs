@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LMSApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a1149774c7e7bbef7ba65e52cc8c165137c86648")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cdf67e1963ce0f885512260106d0e2ebef5bad39")]
 [assembly: System.Reflection.AssemblyProductAttribute("LMSApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LMSApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

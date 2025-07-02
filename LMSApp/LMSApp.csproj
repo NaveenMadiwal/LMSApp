@@ -21,7 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ProjectDocs\" />
+    <Folder Include="ProjectDocs\media\" />
+    <Folder Include="wwwroot\mediaFiles\" />
   </ItemGroup>
 
 </Project>

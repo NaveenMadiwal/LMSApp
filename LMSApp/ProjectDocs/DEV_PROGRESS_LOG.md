@@ -30,7 +30,7 @@
 
 ---
 
-### 📅 2025-07-01 (Monday)
+### 📅 2025-07-02 (Monday)
 
 ✅ Finalized Professional LMS DB Table List
 | Table Name        | Purpose                                        |
@@ -47,7 +47,7 @@
 
 ---
 
-✅ Entity Relationship Diagram (ERD)
+✅ Entity Relationship Diagram (ERD) (Open in RAW mode to see below ERD Digram )
 
 ┌────────────────────┐
 │   AspNetUsers      │
@@ -217,3 +217,45 @@ Organize static resources under wwwroot (CSS, JS, images)
 🔜 Planned to add ApiController endpoints and test via Postman (to be implemented tomorrow)
 
 ✅ Will maintain clean separation of MVC views (Controllers/) and APIs (Controllers/Api/)
+
+---
+
+### 📅 2025-07-04 (Friday)
+
+1. What is IHttpClientFactory _httpClientFactory?
+ IHttpClientFactory is a factory introduced by Microsoft to:
+Create HttpClient instances the right way
+
+Avoid socket exhaustion
+
+Manage DNS refresh, retries, etc.
+
+Centralize settings (base address, headers)
+
+---
+✅ Dev Progress Log (Admin Module)
+Set up Admin Dashboard and displayed total counts (courses, enrollments, students, categories).
+
+Created Api folder to implement Web APIs.
+
+Designed Category model with CreatedAt, UpdatedAt, IsActive (for soft delete).
+
+Created CategoryApiController with full CRUD (GET, POST, PUT, DELETE).
+
+Consumed category API in AdminController using IHttpClientFactory.
+
+Created Razor view (Categories.cshtml) to display and manage categories via controller methods (no JS).
+
+Implemented Add, Update, Delete (soft) using form-based server-side methods.
+
+---
+## ✅ Application Flow
+Instead of calling the API directly from the Razor view via JS (AJAX), you'll:
+
+**Razor View ⟶ AdminController (MVC) ⟶ CategoryApiController (Web API) ⟶ DB**
+---
+🐞 Issues Faced & Resolved
+
+❓ Identity table stores student data? → ✅ Yes, all users are stored in AspNetUsers.
+
+✅ Decided to manage categories via controller (not JavaScript) for cleaner architecture.

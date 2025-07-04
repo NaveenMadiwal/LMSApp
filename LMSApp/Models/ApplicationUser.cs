@@ -12,5 +12,8 @@ namespace LMSApp.Models
 
         // Just for UI filtering (not used for security logic)
         public string? RoleType { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
     }
 }

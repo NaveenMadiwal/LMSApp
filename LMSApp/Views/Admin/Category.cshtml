@@ -1,0 +1,57 @@
+﻿@model List<LMSApp.Models.Category>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Category Management";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div style="color: green;">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="color: red;">@TempData["Error"]</div>
+}
+
+@foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+{
+    <div style="color:red">@error.ErrorMessage</div>
+}
+
+<!-- Add Category -->
+<form asp-action="CreateCategory" method="post">
+    @Html.AntiForgeryToken()
+    <input type="text" name="Name" placeholder="Enter new category name" required />
+    <button type="submit">Add Category</button>
+</form>
+
+<br />
+
+<!-- Category Table -->
+<table border="1" cellpadding="10" style="width: 100%;">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var category in Model)
+        {
+            <tr>
+                <form asp-action="UpdateCategory" method="post">
+                <td>
+                    <input type="hidden" name="Id" value="@category.Id" />
+                    <input type="text" name="Name" value="@category.Name" required />
+                </td>
+                <td>
+                    <button type="submit">Update</button>
+                    <a asp-action="DeleteCategory" asp-route-id="@category.Id" onclick="return confirm('Are you sure?')">Delete</a>
+                </td>
+                </form>
+            </tr>
+        }
+    </tbody>
+</table>

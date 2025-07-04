@@ -13,6 +13,8 @@ namespace LMSApp
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddHttpClient();
+
             // Add services to the container.
             builder.Services.AddControllersWithViews();
             builder.Services.AddRazorPages();
@@ -44,7 +46,7 @@ namespace LMSApp
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Account}/{action=Login}/{id?}");
 
             app.MapRazorPages();
 

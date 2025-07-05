@@ -46,7 +46,10 @@ namespace LMSApp
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Account}/{action=Login}/{id?}");
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            // Add API controller routing
+            app.MapControllers();
 
             app.MapRazorPages();
 

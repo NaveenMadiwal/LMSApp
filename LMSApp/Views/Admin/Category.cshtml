@@ -4,54 +4,155 @@
     ViewData["Title"] = "Category Management";
 }
 
-<h2>@ViewData["Title"]</h2>
-
-@if (TempData["Success"] != null)
-{
-    <div style="color: green;">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div style="color: red;">@TempData["Error"]</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/category.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 }
 
-@foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-{
-    <div style="color:red">@error.ErrorMessage</div>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="category-header text-center">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-tags icon"></i>
+                    @ViewData["Title"]
+                </h1>
+                <p class="mb-0 opacity-75">Manage and organize your course categories efficiently</p>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="stats-number">@Model.Count</div>
+                    <div class="stats-label">Total Categories</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle icon"></i>
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle icon"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-circle icon"></i>
+            @error.ErrorMessage
+        </div>
+    }
+
+    <!-- Add Category Form -->
+    <div class="category-card">
+        <div class="card-body p-4">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-plus-circle text-primary icon"></i>
+                Add New Category
+            </h5>
+            <form asp-action="CreateCategory" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-tag text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" name="Name" 
+                               placeholder="Enter new category name" required />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus icon"></i>
+                        Add Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Table -->
+    <div class="category-table">
+        <div class="table-header">
+            <i class="fas fa-list icon"></i>
+            Manage Categories
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 70%; padding: 1.5rem;">
+                            <i class="fas fa-tag icon"></i>
+                            Category Name
+                        </th>
+                        <th style="width: 30%; padding: 1.5rem; text-align: center;">
+                            <i class="fas fa-cogs icon"></i>
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var category in Model)
+                        {
+                            <tr>
+                                <form asp-action="UpdateCategory" method="post" class="d-flex">
+                                <td style="padding: 1.5rem;">
+                                    <input type="hidden" name="Id" value="@category.Id" />
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-edit text-muted"></i>
+                                        </span>
+                                        <input type="text" class="form-control border-start-0" name="Name" 
+                                               value="@category.Name" required />
+                                    </div>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center;">
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-save icon"></i>
+                                            Update
+                                        </button>
+                                        <a asp-action="DeleteCategory" asp-route-id="@category.Id"
+                                           class="btn btn-danger delete-category-btn">
+                                            <i class="fas fa-trash icon"></i>
+                                            Delete
+                                        </a>
+                                    </div>
+                                </td>
+                                </form>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="2" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                                    <h5>No categories found</h5>
+                                    <p>Start by adding your first category above.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/category.js"></script>
 }
-
-<!-- Add Category -->
-<form asp-action="CreateCategory" method="post">
-    @Html.AntiForgeryToken()
-    <input type="text" name="Name" placeholder="Enter new category name" required />
-    <button type="submit">Add Category</button>
-</form>
-
-<br />
-
-<!-- Category Table -->
-<table border="1" cellpadding="10" style="width: 100%;">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var category in Model)
-        {
-            <tr>
-                <form asp-action="UpdateCategory" method="post">
-                <td>
-                    <input type="hidden" name="Id" value="@category.Id" />
-                    <input type="text" name="Name" value="@category.Name" required />
-                </td>
-                <td>
-                    <button type="submit">Update</button>
-                    <a asp-action="DeleteCategory" asp-route-id="@category.Id" onclick="return confirm('Are you sure?')">Delete</a>
-                </td>
-                </form>
-            </tr>
-        }
-    </tbody>
-</table>

@@ -1,15 +1,107 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Instructor Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .instructor-navbar {
+            background: white;
+            box-shadow: 0 2px 16px rgba(102,126,234,0.08);
+            padding: 0.75rem 2rem;
+        }
+        .instructor-navbar .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #667eea !important;
+            display: flex;
+            align-items: center;
+        }
+        .instructor-navbar .navbar-brand img {
+            width: 36px;
+            height: 36px;
+            margin-right: 0.7rem;
+        }
+        .instructor-navbar .nav-link {
+            color: #444 !important;
+            font-weight: 500;
+            margin-right: 1.2rem;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .instructor-navbar .nav-link.active, .instructor-navbar .nav-link:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff !important;
+        }
+        .instructor-main {
+            max-width: 900px;
+            margin: 2.5rem auto 0 auto;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.10);
+            padding: 2.5rem 2rem 2rem 2rem;
+            min-height: 70vh;
+        }
+        (max-width: 600px) {
+            .instructor-main {
+                padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+            }
+            .instructor-navbar {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div>
-        <h2>Admin Layout</h2>
-        <a href="/Identity/Account/Logout">Logout</a>
-        <hr />
+    <nav class="navbar instructor-navbar navbar-expand-lg">
+        <a class="navbar-brand" href="/Instructor/Dashboard">
+            <img src="/favicon.ico" alt="LMS Logo" /> LMS Instructor
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#instructorNav" aria-controls="instructorNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="instructorNav">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link @(Context.Request.Path.Value.Contains("/Instructor/Dashboard") ? "active" : "")" href="/Instructor/Dashboard">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(Context.Request.Path.Value.Contains("/Instructor/Courses") ? "active" : "")" href="/Instructor/Courses">
+                        <i class="fas fa-book"></i> My Courses
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(Context.Request.Path.Value.Contains("/Instructor/Enrollments") ? "active" : "")" href="/Instructor/Enrollments">
+                        <i class="fas fa-users"></i> Enrollments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(Context.Request.Path.Value.Contains("/Instructor/Profile") ? "active" : "")" href="/Instructor/Profile">
+                        <i class="fas fa-user"></i> Profile
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Identity/Account/Logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <main class="instructor-main">
         @RenderBody()
-    </div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

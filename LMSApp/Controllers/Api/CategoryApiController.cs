@@ -1,10 +1,13 @@
 ﻿using LMSApp.Data;
 using LMSApp.Models;
+using LMSApp.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMSApp.Controllers.Api
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class CategoryApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -28,28 +31,34 @@ namespace LMSApp.Controllers.Api
 
         // POST: api/CategoryApi
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Category category)
+        public async Task<IActionResult> Create([FromBody] CategoryViewModel model)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            category.CreatedAt = DateTime.Now;
-            category.IsActive = true;
+            var category = new Category
+            {
+                Name = model.Name,
+                CreatedAt = DateTime.Now,
+                IsActive = true
+            };
+
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
             return Ok(category);
         }
 
+
         // PUT: api/CategoryApi/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Category updated)
+        public async Task<IActionResult> Update(int id, [FromBody] CategoryViewModel model)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null || !category.IsActive)
                 return NotFound();
 
-            category.Name = updated.Name;
+            category.Name = model.Name;
             category.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
@@ -70,6 +79,7 @@ namespace LMSApp.Controllers.Api
             await _context.SaveChangesAsync();
             return Ok(new { message = "Category deactivated" });
         }
+
 
     }
 }

@@ -1,37 +1,225 @@
 ﻿@model LMSApp.Models.ViewModels.AdminDashboardViewModel
-
-<div>Total Courses: @Model.TotalCourses</div>
-
-
-
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<h2>@ViewData["Title"]</h2>
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}
 
 <div class="dashboard-container">
-    <div class="card">Total Courses: <strong>@Model.TotalCourses</strong></div>
-    <div class="card">Total Enrollments: <strong>@Model.TotalEnrollments</strong></div>
-    <div class="card">Total Students: <strong>@Model.TotalStudents</strong></div>
-    <div class="card">Total Categories: <strong>@Model.TotalCategories</strong></div>
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <div class="welcome-content">
+            <h1 class="welcome-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Welcome to LMS Admin Dashboard
+            </h1>
+            <p class="welcome-subtitle">Manage your learning management system efficiently</p>
+            <div class="current-time" id="currentTime"></div>
+        </div>
+        <div class="welcome-illustration">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card stat-courses">
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.TotalCourses</div>
+                <div class="stat-label">Total Courses</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>12% from last month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-enrollments">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.TotalEnrollments</div>
+                <div class="stat-label">Total Enrollments</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>8% from last month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-students">
+            <div class="stat-icon">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.TotalStudents</div>
+                <div class="stat-label">Total Students</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>15% from last month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-categories">
+            <div class="stat-icon">
+                <i class="fas fa-tags"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">@Model.TotalCategories</div>
+                <div class="stat-label">Total Categories</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-minus"></i>
+                    <span>No change</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3 class="section-title">
+            <i class="fas fa-bolt"></i>
+            Quick Actions
+        </h3>
+        <div class="actions-grid">
+            <a href="/Admin/Category" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Add Category</h4>
+                    <p>Create a new course category</p>
+                </div>
+            </a>
+            <a href="/Admin/Course" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Add Course</h4>
+                    <p>Create a new course</p>
+                </div>
+            </a>
+            <a href="/Admin/UserManagement" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Add User</h4>
+                    <p>Register a new user</p>
+                </div>
+            </a>
+            <a href="/Admin/Feedback" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="action-content">
+                    <h4>View Feedback</h4>
+                    <p>Check student feedback</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity & System Status -->
+    <div class="dashboard-bottom">
+        <div class="recent-activity">
+            <h3 class="section-title">
+                <i class="fas fa-clock"></i>
+                Recent Activity
+            </h3>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">New Student Registration</div>
+                        <div class="activity-desc">John Doe registered for "Web Development" course</div>
+                        <div class="activity-time">2 minutes ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Course Created</div>
+                        <div class="activity-desc">New course "Advanced JavaScript" was added</div>
+                        <div class="activity-time">1 hour ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">Course Completed</div>
+                        <div class="activity-desc">Sarah completed "Python Basics" course</div>
+                        <div class="activity-time">3 hours ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-comment"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">New Feedback</div>
+                        <div class="activity-desc">Mike left feedback for "Data Science" course</div>
+                        <div class="activity-time">5 hours ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <h3 class="section-title">
+                <i class="fas fa-server"></i>
+                System Status
+            </h3>
+            <div class="status-grid">
+                <div class="status-item online">
+                    <div class="status-indicator"></div>
+                    <div class="status-content">
+                        <div class="status-title">Database</div>
+                        <div class="status-desc">All systems operational</div>
+                    </div>
+                </div>
+                <div class="status-item online">
+                    <div class="status-indicator"></div>
+                    <div class="status-content">
+                        <div class="status-title">File Storage</div>
+                        <div class="status-desc">85% storage used</div>
+                    </div>
+                </div>
+                <div class="status-item online">
+                    <div class="status-indicator"></div>
+                    <div class="status-content">
+                        <div class="status-title">Email Service</div>
+                        <div class="status-desc">Sending emails normally</div>
+                    </div>
+                </div>
+                <div class="status-item warning">
+                    <div class="status-indicator"></div>
+                    <div class="status-content">
+                        <div class="status-title">Backup System</div>
+                        <div class="status-desc">Last backup: 2 hours ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<style>
-    .dashboard-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-
-    .card {
-        background: #f4f4f4;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        font-size: 1.2rem;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-    }
-</style>
+@section Scripts {
+    <script src="~/js/dashboard.js"></script>
+}

@@ -8,7 +8,7 @@ It includes **role-based access** (Admin, Instructor, Student), secure **authent
 ## 📽️ Demo Video
 
 ▶️ [Watch Full Demo on YouTube](https://youtu.be/ziBxxzjYvFE?si=giLpvNCFwMpD9Ezv)  
-📁 [GitHub Repository](https://github.com/your-username/lms-project)
+📁 [GitHub Repository](https://github.com/NaveenMadiwal/LMSApp)
 
 ---
 
@@ -181,7 +181,7 @@ This is a personal learning project — suggestions are welcome!
 **Naveen Madiwal**  
 📧 naveenmadiwal7777@gmail.com  
 🔗 [LinkedIn] (https://www.linkedin.com/in/naveen-madiwal/)  
-📁 [GitHub](https://github.com/your-username)
+📁 [GitHub](https://github.com/NaveenMadiwal/LMSApp)
 
 ---
 

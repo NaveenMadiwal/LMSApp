@@ -10,10 +10,10 @@ namespace LMSApp.Data
            : base(options)
         {
         }
-        public DbSet<Course> Courses { get; set; }
-        public DbSet<Enrollment> Enrollments { get; set; }
-        public DbSet<CourseMaterial> CourseMaterials { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<CourseMaterial> CourseMaterials { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,7 +22,7 @@ namespace LMSApp.Data
 
             modelBuilder.Entity<Enrollment>()
                 .HasOne(e => e.Student)
-                .WithMany()
+                .WithMany(u => u.Enrollments)
                 .HasForeignKey(e => e.StudentId)
                 .OnDelete(DeleteBehavior.Restrict);  
 
@@ -34,7 +34,7 @@ namespace LMSApp.Data
 
             modelBuilder.Entity<Feedback>()
                 .HasOne(f => f.Student)
-                .WithMany()
+                .WithMany(u => u.Feedbacks)
                 .HasForeignKey(f => f.StudentId)
                 .OnDelete(DeleteBehavior.Restrict);  
 

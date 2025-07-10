@@ -1,0 +1,319 @@
+@model LMSApp.Models.ViewModels.AdminReportsViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Reports & Analytics";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Reports & Analytics</h1>
+            <p class="text-muted">Comprehensive insights into your LMS performance</p>
+        </div>
+        <div>
+            <button class="btn btn-success" onclick="exportReport()">
+                <i class="fas fa-download me-2"></i>Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.EnrollmentReport.TotalEnrollments</h4>
+                            <p class="mb-0">Total Enrollments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.EnrollmentReport.CompletionRate.ToString("F1")%</h4>
+                            <p class="mb-0">Completion Rate</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-trophy fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.CourseReport.TotalCourses</h4>
+                            <p class="mb-0">Active Courses</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-book fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">@Model.UserReport.TotalUsers</h4>
+                            <p class="mb-0">Total Students</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-graduate fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Enrollment Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="enrollmentChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Course Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="courseChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Reports -->
+    <div class="row">
+        <!-- Top Courses -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-star me-2"></i>Top Rated Courses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.CourseReport.HighestRatedCourses.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var course in Model.CourseReport.HighestRatedCourses.Take(5))
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">@course.CourseTitle</h6>
+                                        <small class="text-muted">@course.InstructorName</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="star-rating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= Math.Round(course.AverageRating))
+                                                {
+                                                    <i class="fas fa-star text-warning"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="far fa-star text-muted"></i>
+                                                }
+                                            }
+                                        </div>
+                                        <small class="text-muted">@course.AverageRating.ToString("F1")/5</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">No course ratings available</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Popular Courses -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-fire me-2"></i>Most Popular Courses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.CourseReport.MostPopularCourses.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var course in Model.CourseReport.MostPopularCourses.Take(5))
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">@course.CourseTitle</h6>
+                                        <small class="text-muted">@course.InstructorName</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary rounded-pill">@course.EnrollmentCount enrollments</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">No enrollment data available</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-clock me-2"></i>Most Active Students
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.UserReport.MostActiveUsers.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Email</th>
+                                        <th>Enrolled Courses</th>
+                                        <th>Completed Courses</th>
+                                        <th>Last Activity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.UserReport.MostActiveUsers.Take(10))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                    <span class="fw-bold">@user.UserName</span>
+                                                </div>
+                                            </td>
+                                            <td>@user.Email</td>
+                                            <td>
+                                                <span class="badge bg-info">@user.EnrolledCourses</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">@user.CompletedCourses</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @user.LastLogin.ToString("MMM dd, yyyy HH:mm")
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">No user activity data available</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Enrollment Chart
+        const enrollmentCtx = document.getElementById('enrollmentChart').getContext('2d');
+        const enrollmentChart = new Chart(enrollmentCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Enrollments',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        // Course Distribution Chart
+        const courseCtx = document.getElementById('courseChart').getContext('2d');
+        const courseChart = new Chart(courseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Inactive', 'Completed'],
+                datasets: [{
+                    data: [@Model.CourseReport.ActiveCourses, @Model.CourseReport.InactiveCourses, @Model.EnrollmentReport.CompletedEnrollments],
+                    backgroundColor: [
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 99, 132)',
+                        'rgb(75, 192, 192)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        function exportReport() {
+            window.location.href = '/Admin/ExportReport';
+        }
+    </script>
+} 

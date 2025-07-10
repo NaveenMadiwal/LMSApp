@@ -11,7 +11,7 @@ function initializeAdminLayout() {
     setupSidebarToggle();
     setupActiveNavigation();
     setupResponsiveBehavior();
-    setupDropdowns();
+    //setupDropdowns();
     setupAnimations();
 }
 

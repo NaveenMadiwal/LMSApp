@@ -443,7 +443,7 @@ namespace LMSApp.Migrations
                         .HasForeignKey("CategoryId");
 
                     b.HasOne("LMSApp.Models.ApplicationUser", "CreatedBy")
-                        .WithMany()
+                        .WithMany("CreatedCourses")
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -473,7 +473,7 @@ namespace LMSApp.Migrations
                         .IsRequired();
 
                     b.HasOne("LMSApp.Models.ApplicationUser", "Student")
-                        .WithMany()
+                        .WithMany("Enrollments")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -492,7 +492,7 @@ namespace LMSApp.Migrations
                         .IsRequired();
 
                     b.HasOne("LMSApp.Models.ApplicationUser", "Student")
-                        .WithMany()
+                        .WithMany("Feedbacks")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -551,6 +551,15 @@ namespace LMSApp.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LMSApp.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("CreatedCourses");
+
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("Feedbacks");
                 });
 
             modelBuilder.Entity("LMSApp.Models.Category", b =>

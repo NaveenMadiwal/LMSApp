@@ -68,6 +68,7 @@ namespace LMSApp.Models.ViewModels
         public DateTime? EndDate { get; set; }
         public int? CategoryId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
+        public string CreatedById { get; set; } = string.Empty;
         public string CreatedByName { get; set; } = string.Empty;
         public int MaterialCount { get; set; }
         public int EnrollmentCount { get; set; }

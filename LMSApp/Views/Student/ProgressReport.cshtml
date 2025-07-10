@@ -1,0 +1,357 @@
+@model LMSApp.Models.ViewModels.StudentProgressViewModel
+@{
+    ViewData["Title"] = "Progress Report";
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="text-gradient mb-2"><i class="fas fa-chart-line me-2"></i>Progress Report</h2>
+                    <p class="text-muted mb-0">Track your learning journey and course completion status</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stats-number">@Model.TotalCourses</div>
+                    <div class="stats-label">Total Courses</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-number">@Model.CompletedCourses</div>
+                    <div class="stats-label">Completed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stats-number">@Model.InProgressCourses</div>
+                    <div class="stats-label">In Progress</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stats-number">@Model.AverageCompletionRate%</div>
+                    <div class="stats-label">Avg. Completion</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <!-- Course Overview Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-table me-2"></i>Course Progress Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Course Title</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Last Accessed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var enrollment in Model.Enrollments)
+                                {
+                                    var progressPercentage = enrollment.CompletionStatus switch
+                                    {
+                                        "Completed" => 100,
+                                        "In Progress" => 50,
+                                        _ => 0
+                                    };
+                                    
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="course-icon me-3">
+                                                    <i class="fas fa-graduation-cap text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">@enrollment.CourseTitle</div>
+                                                    <small class="text-muted">@enrollment.StudentName</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@enrollment.EnrolledOn.ToString("MMM dd, yyyy")</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                @if (enrollment.CompletionStatus == "Completed")
+                                                {
+                                                    @enrollment.EnrolledOn.AddDays(30).ToString("MMM dd, yyyy")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-warning">Ongoing</span>
+                                                }
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@(enrollment.CompletionStatus == "Completed" ? "success" : enrollment.CompletionStatus == "In Progress" ? "warning" : "secondary")">
+                                                @enrollment.CompletionStatus
+                                            </span>
+                                            @if (progressPercentage == 100)
+                                            {
+                                                <i class="fas fa-trophy text-warning ms-1" title="100% Completed"></i>
+                                            }
+                                            else if (progressPercentage == 0)
+                                            {
+                                                <i class="fas fa-exclamation text-danger ms-1" title="Not Started"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-clock text-info ms-1" title="In Progress"></i>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                    <div class="progress-bar" style="width: @progressPercentage%"></div>
+                                                </div>
+                                                <small class="fw-bold">@progressPercentage%</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                @{
+                                                    var lastAccessed = enrollment.EnrolledOn.AddDays(-new Random().Next(1, 7));
+                                                    var daysAgo = (DateTime.Now - lastAccessed).Days;
+                                                    if (daysAgo == 0)
+                                                    {
+                                                        <span>Today</span>
+                                                    }
+                                                    else if (daysAgo == 1)
+                                                    {
+                                                        <span>Yesterday</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@daysAgo days ago</span>
+                                                    }
+                                                }
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewCourseDetails(@enrollment.CourseId, '@enrollment.CourseTitle')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Chart -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Completion Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <canvas id="progressChart" width="200" height="200"></canvas>
+                    </div>
+                    <div class="progress-legend">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="legend-color bg-success me-2"></div>
+                                <small>Completed</small>
+                            </div>
+                            <small class="fw-bold">@Model.CompletedCourses</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="legend-color bg-warning me-2"></div>
+                                <small>In Progress</small>
+                            </div>
+                            <small class="fw-bold">@Model.InProgressCourses</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="legend-color bg-secondary me-2"></div>
+                                <small>Not Started</small>
+                            </div>
+                            <small class="fw-bold">@Model.PendingCourses</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="activity-list">
+                        @foreach (var enrollment in Model.Enrollments.Take(3))
+                        {
+                            <div class="activity-item d-flex align-items-center mb-3">
+                                <div class="activity-icon me-3">
+                                    @if (enrollment.CompletionStatus == "Completed")
+                                    {
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    }
+                                    else if (enrollment.CompletionStatus == "In Progress")
+                                    {
+                                        <i class="fas fa-play-circle text-warning"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-clock text-secondary"></i>
+                                    }
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium">@enrollment.CourseTitle</div>
+                                    <small class="text-muted">@enrollment.CompletionStatus</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course Detail Modal -->
+<div class="modal fade" id="courseDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseDetailTitle">Course Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courseDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Progress Chart
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        const progressChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'In Progress', 'Not Started'],
+                datasets: [{
+                    data: [@Model.CompletedCourses, @Model.InProgressCourses, @Model.PendingCourses],
+                    backgroundColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#6b7280'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        function viewCourseDetails(courseId, courseTitle) {
+            $('#courseDetailTitle').text(courseTitle);
+            $('#courseDetailContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2">Loading course details...</p></div>');
+            $('#courseDetailModal').modal('show');
+
+            fetch(`/Student/GetCourseDetails/${courseId}`)
+                .then(response => response.text())
+                .then(html => {
+                    $('#courseDetailContent').html(html);
+                })
+                .catch(error => {
+                    $('#courseDetailContent').html('<div class="alert alert-danger">Error loading course details. Please try again.</div>');
+                });
+        }
+    </script>
+}
+
+<style>
+.course-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 50%;
+}
+
+.progress-legend {
+    font-size: 0.9rem;
+}
+
+.activity-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style> 

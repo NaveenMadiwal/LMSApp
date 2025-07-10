@@ -1,6 +1,7 @@
 ﻿using LMSApp.Data;
 using LMSApp.Models;
 using LMSApp.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace LMSApp.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CourseApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -314,11 +316,26 @@ namespace LMSApp.Controllers.Api
         }
 
         [HttpGet("creator/{creatorId}")]
+        [Authorize(Roles = "Instructor")]
         public async Task<IActionResult> GetCoursesByCreator(string creatorId)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"GetCoursesByCreator called with creatorId: {creatorId}");
+                // Get the current user's ID from the authentication context
+                var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return StatusCode(401, new { success = false, message = "User not authenticated" });
+                }
+
+                // Ensure the instructor can only access their own courses
+                if (currentUserId != creatorId)
+                {
+                    return StatusCode(403, new { success = false, message = "Access denied. You can only view your own courses." });
+                }
+
+                System.Diagnostics.Debug.WriteLine($"GetCoursesByCreator called with creatorId: {creatorId}, currentUserId: {currentUserId}");
                 
                 var courses = await _context.Courses
                     .Where(c => c.CreatedById == creatorId && c.IsActive)

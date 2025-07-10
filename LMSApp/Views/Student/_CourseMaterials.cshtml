@@ -1,0 +1,93 @@
+@model IEnumerable<LMSApp.Models.CourseMaterial>
+@using System.IO
+
+<div class="row">
+    <div class="col-12">
+        @if (Model.Any())
+        {
+            <div class="row">
+                @foreach (var material in Model)
+                {
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card material-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="material-icon me-3">
+                                        @{
+                                            var iconClass = material.FileType?.ToUpper() switch
+                                            {
+                                                "PDF" => "fas fa-file-pdf text-danger",
+                                                "DOC" or "DOCX" => "fas fa-file-word text-primary",
+                                                "XLS" or "XLSX" => "fas fa-file-excel text-success",
+                                                "PPT" or "PPTX" => "fas fa-file-powerpoint text-warning",
+                                                "MP4" or "AVI" or "MOV" => "fas fa-file-video text-info",
+                                                "MP3" or "WAV" => "fas fa-file-audio text-secondary",
+                                                "JPG" or "JPEG" or "PNG" or "GIF" => "fas fa-file-image text-success",
+                                                _ => "fas fa-file text-muted"
+                                            };
+                                        }
+                                        <i class="@iconClass fa-2x"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title mb-1">@material.Title</h6>
+                                        <small class="text-muted">@material.FileType file</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Type</small>
+                                            <span class="badge bg-light text-dark">@material.FileType</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Created</small>
+                                            <small class="fw-medium">@material.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <a href="@Url.Action("DownloadMaterial", "Student", new { materialId = material.Id })" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download me-2"></i>Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No materials available</h5>
+                <p class="text-muted">Course materials will be added by the instructor.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.material-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e9ecef;
+}
+
+.material-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.material-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+</style> 

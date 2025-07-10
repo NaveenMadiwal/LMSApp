@@ -59,6 +59,7 @@ namespace LMSApp.Models.ViewModels
         public string RoleType { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public int EnrollmentCount { get; set; }
+        public int CompletedCourses { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? LastLoginDate { get; set; }
     }
@@ -68,10 +69,13 @@ namespace LMSApp.Models.ViewModels
         public int Id { get; set; }
         public string StudentId { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
+        public string StudentEmail { get; set; } = string.Empty;
         public int CourseId { get; set; }
         public string CourseTitle { get; set; } = string.Empty;
         public DateTime EnrolledOn { get; set; }
         public string CompletionStatus { get; set; } = string.Empty;
         public bool IsActive { get; set; }
+        // For frontend compatibility
+        public DateTime EnrollmentDate => EnrolledOn;
     }
 } 

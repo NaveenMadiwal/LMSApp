@@ -1,37 +1,80 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using LMSApp.Models.ViewModels;
-using System.Net.Http.Json;
-using System.Text.Json;
+using LMSApp.Services;
 
 namespace LMSApp.Controllers
 {
     [Authorize(Roles = "Instructor")]
     public class InstructorController : Controller
     {
-        // Simple response model for API calls
-        private class ApiResponse
+        private readonly ICourseService _courseService;
+        private readonly IEnrollmentService _enrollmentService;
+
+        public InstructorController(ICourseService courseService, IEnrollmentService enrollmentService)
         {
-            public bool Success { get; set; }
-            public object Data { get; set; }
-            public string Message { get; set; }
+            _courseService = courseService;
+            _enrollmentService = enrollmentService;
         }
 
-        private readonly IHttpClientFactory _httpClientFactory;
-
-        public InstructorController(IHttpClientFactory httpClientFactory)
+        public async Task<IActionResult> Dashboard()
         {
-            _httpClientFactory = httpClientFactory;
+            var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(instructorId))
+            {
+                TempData["Error"] = "User not authenticated";
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
+            }
+
+            // Get all courses created by this instructor
+            var courses = await _courseService.GetCoursesByCreatorAsync(instructorId);
+            var courseIds = courses.Select(c => c.Id).ToList();
+            int courseCount = courses.Count();
+
+            // Get all enrollments for these courses
+            var allEnrollments = new List<EnrollmentViewModel>();
+            foreach (var courseId in courseIds)
+            {
+                var enrollments = await _enrollmentService.GetEnrollmentsByCourseAsync(courseId, instructorId);
+                allEnrollments.AddRange(enrollments);
+            }
+            int enrolledStudentCount = allEnrollments.Select(e => e.StudentId).Distinct().Count();
+
+            var dashboardVM = new InstructorDashboardViewModel
+            {
+                CourseCount = courseCount,
+                EnrolledStudentCount = enrolledStudentCount,
+                RecentCourses = courses.OrderByDescending(c => c.CreatedAt).Take(3).ToList(),
+                RecentEnrollments = allEnrollments.OrderByDescending(e => e.EnrolledOn).Take(3).ToList()
+            };
+            return View(dashboardVM);
         }
 
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Courses()
         {
-            return View();
-        }
+            try
+            {
+                var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(instructorId))
+                {
+                    TempData["Error"] = "User not authenticated";
+                    return RedirectToAction("Dashboard");
+                }
 
-        public IActionResult Courses()
-        {
-            return View();
+                System.Diagnostics.Debug.WriteLine($"Loading courses page for instructor ID: {instructorId}");
+                
+                var courses = await _courseService.GetCoursesByCreatorAsync(instructorId);
+                
+                System.Diagnostics.Debug.WriteLine($"Found {courses.Count()} courses for instructor {instructorId}");
+                
+                return View(courses);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception in Courses action: {ex.Message}");
+                TempData["Error"] = "Error loading courses";
+                return View(new List<CourseListViewModel>());
+            }
         }
 
         [HttpGet]
@@ -45,48 +88,13 @@ namespace LMSApp.Controllers
                     return Json(new { success = false, message = "User not authenticated" });
                 }
 
-                var client = _httpClientFactory.CreateClient();
-                var apiUrl = $"https://localhost:7052/api/CourseApi/creator/{instructorId}";
+                System.Diagnostics.Debug.WriteLine($"Getting courses for instructor ID: {instructorId}");
                 
-                // Debug: Log the API call
-                System.Diagnostics.Debug.WriteLine($"Calling API: {apiUrl}");
-                System.Diagnostics.Debug.WriteLine($"Instructor ID: {instructorId}");
+                var courses = await _courseService.GetCoursesByCreatorAsync(instructorId);
                 
-                var response = await client.GetAsync(apiUrl);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonString = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"API Response JSON: {jsonString}");
-                    
-                    try
-                    {
-                        var apiResponse = JsonSerializer.Deserialize<ApiResponse>(jsonString, new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        });
-                        
-                        if (apiResponse?.Success == true)
-                        {
-                            return Json(new { success = true, data = apiResponse.Data });
-                        }
-                        else
-                        {
-                            return Json(new { success = false, message = apiResponse?.Message ?? "Unknown error" });
-                        }
-                    }
-                    catch (JsonException ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"JSON Deserialization Error: {ex.Message}");
-                        return Json(new { success = false, message = "Invalid response format from API" });
-                    }
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"API Error: {response.StatusCode} - {errorContent}");
-                    return Json(new { success = false, message = $"Failed to load courses. Status: {response.StatusCode}" });
-                }
+                System.Diagnostics.Debug.WriteLine($"Found {courses.Count()} courses for instructor {instructorId}");
+                
+                return Json(new { success = true, data = courses });
             }
             catch (Exception ex)
             {
@@ -99,44 +107,38 @@ namespace LMSApp.Controllers
         {
             return View();
         }
-
-        [HttpGet]
+         
+        [HttpGet("Instructor/GetCourseEnrollments/{courseId}")]
         public async Task<IActionResult> GetCourseEnrollments(int courseId)
         {
             try
             {
                 var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                var client = _httpClientFactory.CreateClient();
-                
-                // First, verify the course belongs to the instructor
-                var courseResponse = await client.GetAsync($"https://localhost:7052/api/CourseApi/{courseId}");
-                if (!courseResponse.IsSuccessStatusCode)
+                if (string.IsNullOrEmpty(instructorId))
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
+                // Get course details to verify ownership and get title
+                var course = await _courseService.GetCourseAsync(courseId);
+                if (course == null)
                 {
                     return Json(new { success = false, message = "Course not found" });
                 }
-                
-                var courseResult = await courseResponse.Content.ReadFromJsonAsync<dynamic>();
-                if (courseResult?.success != true || courseResult.data["createdById"]?.ToString() != instructorId)
+
+                if (course.CreatedById != instructorId)
                 {
                     return Json(new { success = false, message = "Access denied to this course" });
                 }
-                
+
                 // Get enrollments for this course
-                var enrollmentsResponse = await client.GetAsync($"https://localhost:7052/api/EnrollmentApi/course/{courseId}");
-                if (enrollmentsResponse.IsSuccessStatusCode)
-                {
-                    var enrollmentsResult = await enrollmentsResponse.Content.ReadFromJsonAsync<dynamic>();
-                    if (enrollmentsResult?.success == true)
-                    {
-                        return Json(new { 
-                            success = true, 
-                            data = enrollmentsResult.data,
-                            courseTitle = courseResult.data["title"]?.ToString()
-                        });
-                    }
-                }
+                var enrollments = await _enrollmentService.GetEnrollmentsByCourseAsync(courseId, instructorId);
                 
-                return Json(new { success = false, message = "Failed to load enrollments" });
+                return Json(new { 
+                    success = true, 
+                    data = enrollments,
+                    courseTitle = course.Title
+                });
             }
             catch (Exception ex)
             {
@@ -144,9 +146,66 @@ namespace LMSApp.Controllers
             }
         }
 
-        public IActionResult Profile()
+        [HttpGet]
+        public async Task<IActionResult> Profile()
         {
-            return View();
+            var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(instructorId))
+            {
+                TempData["Error"] = "User not authenticated";
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
+            }
+
+            // Load instructor info
+            var user = await _courseService.GetUserByIdAsync(instructorId); // We'll add this method
+            if (user == null)
+            {
+                TempData["Error"] = "User not found.";
+                return RedirectToAction("Dashboard");
+            }
+
+            var vm = new ProfileViewModel
+            {
+                FullName = user.FullName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                DateOfBirth = user.DateOfBirth,
+                RoleType = user.RoleType ?? "Instructor",
+                IsActive = user.IsActive,
+                LastLogin = user.LockoutEnd?.UtcDateTime,
+            };
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(ProfileViewModel model)
+        {
+            //if (!ModelState.IsValid)
+            //{
+            //    TempData["Error"] = "Please correct the errors and try again.";
+            //    return View(model);
+            //}
+
+            var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(instructorId))
+            {
+                TempData["Error"] = "User not authenticated";
+                return RedirectToAction("Login", "Account", new { area = "Identity" });
+            }
+
+            // Update user
+            var result = await _courseService.UpdateUserProfileAsync(instructorId, model); // We'll add this method
+            if (result)
+            {
+                TempData["Success"] = "Profile updated successfully.";
+                return RedirectToAction("Profile");
+            }
+            else
+            {
+                TempData["Error"] = "Failed to update profile. Please try again.";
+                return View(model);
+            }
         }
 
         // Course Management Actions
@@ -188,10 +247,9 @@ namespace LMSApp.Controllers
             // Set the CreatedById to the current user's ID
             model.CreatedById = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsJsonAsync("https://localhost:7052/api/CourseApi", model);
+            var success = await _courseService.CreateCourseAsync(model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -228,10 +286,9 @@ namespace LMSApp.Controllers
             // Set the CreatedById to the current user's ID
             model.CreatedById = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PutAsJsonAsync($"https://localhost:7052/api/CourseApi/{model.Id}", model);
+            var success = await _courseService.UpdateCourseAsync(model.Id, model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -254,10 +311,10 @@ namespace LMSApp.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteCourse(int id)
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.DeleteAsync($"https://localhost:7052/api/CourseApi/{id}");
+            var instructorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var success = await _courseService.DeleteCourseAsync(id, instructorId);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {

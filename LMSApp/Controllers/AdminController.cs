@@ -1,119 +1,90 @@
 ﻿using LMSApp.Data;
 using LMSApp.Models;
 using LMSApp.Models.ViewModels;
+using LMSApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System.Security.Cryptography.X509Certificates;
 
 namespace LMSApp.Controllers
 {
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string _baseApiUrl = "https://localhost:7052/api/CategoryApi";
+        private readonly IAdminService _adminService;
 
-
-        public AdminController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
+        public AdminController(IAdminService adminService)
         {
-            _context = context;
-            _httpClientFactory = httpClientFactory;
+            _adminService = adminService;
         }
         public async Task<IActionResult> Dashboard()
         {
-            var model = new AdminDashboardViewModel
+            try
             {
-                TotalCourses = await _context.Courses.CountAsync(c => c.IsActive),
-                TotalEnrollments = await _context.Enrollments.CountAsync(e => e.IsActive),
-                TotalStudents = await _context.Users.CountAsync(),
-                TotalCategories = await _context.Categories.CountAsync(c => c.IsActive)
-            };
-
-            return View(model);
+                var model = await _adminService.GetDashboardStatisticsAsync();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading dashboard statistics";
+                return View(new AdminDashboardViewModel());
+            }
         }
 
         public async Task<IActionResult> Category()
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync(_baseApiUrl);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ViewBag.Error = "Failed to fetch categories";
+                var categories = await _adminService.GetCategoriesAsync();
+                return View(categories);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading categories";
                 return View(new List<Category>());
             }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var categories = JsonConvert.DeserializeObject<List<Category>>(json);
-
-            return View(categories);
         }
 
         public async Task<IActionResult> Course()
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync("https://localhost:7052/api/CourseApi");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ViewBag.Error = "Failed to fetch courses";
+                var courses = await _adminService.GetCoursesAsync();
+                return View(courses);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading courses";
                 return View(new List<CourseListViewModel>());
             }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<dynamic>(json);
-            var courses = JsonConvert.DeserializeObject<List<CourseListViewModel>>(result.data.ToString());
-
-            return View(courses);
         }
 
         public async Task<IActionResult> Student()
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync("https://localhost:7052/api/StudentApi");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ViewBag.Error = "Failed to fetch users";
+                var students = await _adminService.GetStudentsAsync();
+                return View(students);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading students";
                 return View(new List<StudentListViewModel>());
             }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<dynamic>(json);
-            var users = JsonConvert.DeserializeObject<List<StudentListViewModel>>(result.data.ToString());
-
-            return View(users);
         }
 
         public async Task<IActionResult> StudentEnrollments()
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync("https://localhost:7052/api/StudentApi");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ViewBag.Error = "Failed to fetch students";
+                var students = await _adminService.GetStudentsWithEnrollmentsAsync();
+                return View(students);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading student enrollments";
                 return View(new List<StudentListViewModel>());
             }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<dynamic>(json);
-            var allUsers = JsonConvert.DeserializeObject<List<StudentListViewModel>>(result.data.ToString());
-            
-            // Filter only students - use foreach to avoid dynamic dispatch issue
-            var students = new List<StudentListViewModel>();
-            foreach (var user in allUsers)
-            {
-                if (user.RoleType == "Student")
-                {
-                    students.Add(user);
-                }
-            }
-
-            return View(students);
         }
 
         [HttpPost]
@@ -128,27 +99,36 @@ namespace LMSApp.Controllers
                 }
                 TempData["Error"] = "Invalid category name.";
                 return RedirectToAction("Category");
-            } 
-
-            var client = _httpClientFactory.CreateClient();
-
-            var response = await client.PostAsJsonAsync(_baseApiUrl, model);
-
-            if (response.IsSuccessStatusCode)
-            {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                {
-                    return Json(new { success = true, message = "Category added successfully." });
-                }
-                TempData["Success"] = "Category added successfully.";
             }
-            else
+
+            try
+            {
+                var success = await _adminService.CreateCategoryAsync(model);
+
+                if (success)
+                {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = true, message = "Category added successfully." });
+                    }
+                    TempData["Success"] = "Category added successfully.";
+                }
+                else
+                {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = "Failed to add category." });
+                    }
+                    TempData["Error"] = "Failed to add category.";
+                }
+            }
+            catch (Exception ex)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = false, message = "Failed to add category." });
+                    return Json(new { success = false, message = "Error creating category." });
                 }
-                TempData["Error"] = "Failed to add category.";
+                TempData["Error"] = "Error creating category.";
             }
 
             return RedirectToAction("Category");
@@ -168,24 +148,34 @@ namespace LMSApp.Controllers
                 return RedirectToAction("Category");
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PutAsJsonAsync($"{_baseApiUrl}/{model.Id}", model);
+            try
+            {
+                var success = await _adminService.UpdateCategoryAsync(model);
 
-            if (response.IsSuccessStatusCode)
-            {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                if (success)
                 {
-                    return Json(new { success = true, message = "Category updated successfully.", categoryName = model.Name });
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = true, message = "Category updated successfully.", categoryName = model.Name });
+                    }
+                    TempData["Success"] = "Category updated successfully.";
                 }
-                TempData["Success"] = "Category updated successfully.";
+                else
+                {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = "Failed to update category." });
+                    }
+                    TempData["Error"] = "Failed to update category.";
+                }
             }
-            else
+            catch (Exception ex)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = false, message = "Failed to update category." });
+                    return Json(new { success = false, message = "Error updating category." });
                 }
-                TempData["Error"] = "Failed to update category.";
+                TempData["Error"] = "Error updating category.";
             }
 
             return RedirectToAction("Category");
@@ -194,10 +184,9 @@ namespace LMSApp.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.DeleteAsync($"{_baseApiUrl}/{id}");
+            var success = await _adminService.DeleteCategoryAsync(id);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -238,10 +227,9 @@ namespace LMSApp.Controllers
                 model.CreatedById = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsJsonAsync("https://localhost:7052/api/CourseApi", model);
+            var success = await _adminService.CreateCourseAsync(model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -281,10 +269,9 @@ namespace LMSApp.Controllers
                 model.CreatedById = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PutAsJsonAsync($"https://localhost:7052/api/CourseApi/{model.Id}", model);
+            var success = await _adminService.UpdateCourseAsync(model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -307,10 +294,9 @@ namespace LMSApp.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteCourse(int id)
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.DeleteAsync($"https://localhost:7052/api/CourseApi/{id}");
+            var success = await _adminService.DeleteCourseAsync(id);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -345,10 +331,9 @@ namespace LMSApp.Controllers
                 return RedirectToAction("Student");
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsJsonAsync("https://localhost:7052/api/StudentApi", model);
+            var success = await _adminService.CreateStudentAsync(model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -382,14 +367,13 @@ namespace LMSApp.Controllers
                 return RedirectToAction("Student");
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PutAsJsonAsync($"https://localhost:7052/api/StudentApi/{model.Id}", model);
+            var success = await _adminService.UpdateStudentAsync(model);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = true, message = "User updated successfully.", userName = model.UserName });
+                    return Json(new { success = true, message = "User updated successfully." });
                 }
                 TempData["Success"] = "User updated successfully.";
             }
@@ -408,10 +392,9 @@ namespace LMSApp.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteStudent(string id)
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.DeleteAsync($"https://localhost:7052/api/StudentApi/{id}");
+            var success = await _adminService.DeleteStudentAsync(id);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -431,5 +414,134 @@ namespace LMSApp.Controllers
             return RedirectToAction("Student");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> ToggleUserActive([FromBody] ToggleUserActiveRequest request)
+        {
+            if (string.IsNullOrEmpty(request.userId))
+            {
+                return Json(new { success = false, message = "Invalid user id." });
+            }
+            var model = new LMSApp.Models.ViewModels.StudentViewModel
+            {
+                Id = request.userId,
+                IsActive = request.isActive
+            };
+            // Only update IsActive, so skip validation for other fields
+            var result = await _adminService.UpdateUserActiveOrInactive(model);
+            if (result)
+            {
+                return Json(new { success = true });
+            }
+            else
+            {
+                return Json(new { success = false, message = "Failed to update user status." });
+            }
+        }
+
+        public class ToggleUserActiveRequest
+        {
+            public string userId { get; set; }
+            public bool isActive { get; set; }
+        }
+
+        // Feedback Management
+        public async Task<IActionResult> Feedback()
+        {
+            try
+            {
+                var feedback = await _adminService.GetFeedbackAsync();
+                return View(feedback);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading feedback";
+                return View(new List<FeedbackViewModel>());
+            }
+        }
+
+        public async Task<IActionResult> FeedbackAnalytics()
+        {
+            try
+            {
+                var analytics = await _adminService.GetFeedbackAnalyticsAsync();
+                return View(analytics);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading feedback analytics";
+                return View(new FeedbackAnalyticsViewModel());
+            }
+        }
+         
+        [HttpGet("Admin/GetFeedbackDetails/{feedbackId}")]
+        public async Task<IActionResult> GetFeedbackDetails(int feedbackId)
+         {
+            var feedback = await _adminService.GetFeedbackByIdAsync(feedbackId);
+            if (feedback == null)
+            {
+                return Content("Feedback not found");
+            }
+            return PartialView("_FeedbackDetails", feedback);
+        }
+
+        // Reports
+        public async Task<IActionResult> Reports()
+        {
+            try
+            {
+                var reports = await _adminService.GetReportsAsync();
+                return View(reports);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading reports";
+                return View(new AdminReportsViewModel());
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportReport()
+        {
+            var reports = await _adminService.GetReportsAsync();
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Section,Title,Value");
+            sb.AppendLine($"Enrollments,Total Enrollments,{reports.EnrollmentReport.TotalEnrollments}");
+            sb.AppendLine($"Enrollments,Active Enrollments,{reports.EnrollmentReport.ActiveEnrollments}");
+            sb.AppendLine($"Enrollments,Completed Enrollments,{reports.EnrollmentReport.CompletedEnrollments}");
+            sb.AppendLine($"Enrollments,Completion Rate,{reports.EnrollmentReport.CompletionRate:F1}%");
+            sb.AppendLine($"Courses,Total Courses,{reports.CourseReport.TotalCourses}");
+            sb.AppendLine($"Courses,Active Courses,{reports.CourseReport.ActiveCourses}");
+            sb.AppendLine($"Courses,Inactive Courses,{reports.CourseReport.InactiveCourses}");
+            sb.AppendLine($"Courses,Average Course Rating,{reports.CourseReport.AverageCourseRating:F1}");
+            foreach (var course in reports.CourseReport.HighestRatedCourses)
+            {
+                sb.AppendLine($"Top Rated Course,{course.CourseTitle} (by {course.InstructorName}),{course.AverageRating:F1}/5");
+            }
+            foreach (var course in reports.CourseReport.MostPopularCourses)
+            {
+                sb.AppendLine($"Popular Course,{course.CourseTitle} (by {course.InstructorName}),{course.EnrollmentCount} enrollments");
+            }
+            foreach (var user in reports.UserReport.MostActiveUsers)
+            {
+                sb.AppendLine($"Active Student,{user.UserName} ({user.Email}),{user.EnrolledCourses} enrolled, {user.CompletedCourses} completed");
+            }
+            var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+            return File(bytes, "text/csv", $"LMS_Report_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+        }
+
+        // Activity Logs
+        public async Task<IActionResult> ActivityLogs()
+        {
+            try
+            {
+                var activities = await _adminService.GetRecentActivityAsync();
+                return View(activities);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error loading activity logs";
+                return View(new List<ActivityLogViewModel>());
+            }
+        }
     }
 }

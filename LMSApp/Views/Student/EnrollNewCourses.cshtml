@@ -1,0 +1,452 @@
+@model IEnumerable<LMSApp.Models.ViewModels.CourseListViewModel>
+@{
+    ViewData["Title"] = "Enroll New Courses";
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+@Html.AntiForgeryToken()
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="text-gradient mb-2"><i class="fas fa-plus-circle me-2"></i>Enroll New Courses</h2>
+                    <p class="text-muted mb-0">Discover and enroll in exciting courses to expand your knowledge</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" id="courseSearch" placeholder="Search courses by title, instructor, or category...">
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="Backend Development">Backend Development</option>
+                <option value="Frontend Development">Frontend Development</option>
+                <option value="Full Stack Development">Full Stack Development</option>
+                <option value="Mobile Development">Mobile Development</option>
+                <option value="Data Science">Data Science</option>
+                <option value="DevOps">DevOps</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Course Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count()</div>
+                    <div class="stats-label">Available Courses</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stats-number">@Model.Select(c => c.CreatedById).Distinct().Count()</div>
+                    <div class="stats-label">Instructors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stats-number">@Model.Select(c => c.CategoryName).Distinct().Count()</div>
+                    <div class="stats-label">Categories</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count(c => c.StartDate.HasValue && c.StartDate.Value.Date >= DateTime.Now.Date)</div>
+                    <div class="stats-label">Starting Soon</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Cards -->
+    <div class="row" id="courseContainer">
+        @if (Model.Any())
+        {
+            @foreach (var course in Model)
+            {
+                <div class="col-xl-4 col-lg-6 col-md-6 mb-4 course-card-wrapper" 
+                     data-title="@course.Title.ToLower()" 
+                     data-instructor="@course.CreatedByName.ToLower()" 
+                     data-category="@course.CategoryName.ToLower()">
+                    <div class="card course-card h-100">
+                        <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height: 160px;">
+                            <i class="fas fa-graduation-cap text-white" style="font-size: 3rem;"></i>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0">@course.Title</h5>
+                                <span class="badge bg-primary">@course.CategoryName</span>
+                            </div>
+                            
+                            <p class="text-muted mb-3">@(course.Description?.Length > 100 ? course.Description.Substring(0, 100) + "..." : course.Description)</p>
+                            
+                            <!-- Course Details -->
+                            <div class="mb-3">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Instructor</small>
+                                        <span class="fw-medium">@course.CreatedByName</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Duration</small>
+                                        <span class="fw-medium">
+                                            @if (course.StartDate.HasValue && course.EndDate.HasValue)
+                                            {
+                                                var duration = (course.EndDate.Value - course.StartDate.Value).Days;
+                                                <span>@duration days</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Flexible</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Course Dates -->
+                            <div class="mb-3">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Start Date</small>
+                                        <span class="fw-medium">
+                                            @if (course.StartDate.HasValue)
+                                            {
+                                                @course.StartDate.Value.ToString("MMM dd, yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success">Anytime</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">End Date</small>
+                                        <span class="fw-medium">
+                                            @if (course.EndDate.HasValue)
+                                            {
+                                                @course.EndDate.Value.ToString("MMM dd, yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Ongoing</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enroll Button -->
+                            <div class="d-grid">
+                                <button class="btn btn-primary enroll-btn" 
+                                        onclick="enrollInCourse(@course.Id, '@course.Title', '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value')" 
+                                        data-course-id="@course.Id"
+                                        data-student-id="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value">
+                                    <i class="fas fa-plus-circle me-2"></i>Enroll Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No courses available</h4>
+                        <p class="text-muted">All available courses have been enrolled or there are no active courses at the moment.</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Enrollment Success Modal -->
+<div class="modal fade" id="enrollmentSuccessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enrollment Successful!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                    <h5>Welcome to <span id="enrolledCourseTitle"></span>!</h5>
+                    <p class="text-muted">You have been successfully enrolled in the course. You can now access all course materials and start learning.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continue Browsing</button>
+                <a href="@Url.Action("MyCourses", "Student")" class="btn btn-primary">
+                    <i class="fas fa-book-open me-2"></i>Go to My Courses
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i>
+                <p class="mb-0">Enrolling you in the course...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Search and Filter Functionality
+        $(document).ready(function() {
+            $('#courseSearch').on('keyup', filterCourses);
+            $('#categoryFilter').on('change', filterCourses);
+        });
+
+        function filterCourses() {
+            const searchTerm = $('#courseSearch').val().toLowerCase();
+            const categoryFilter = $('#categoryFilter').val().toLowerCase();
+
+            $('.course-card-wrapper').each(function() {
+                const card = $(this);
+                const title = card.data('title');
+                const instructor = card.data('instructor');
+                const category = card.data('category');
+
+                const matchesSearch = title.includes(searchTerm) || 
+                                    instructor.includes(searchTerm) || 
+                                    category.includes(searchTerm);
+                const matchesCategory = !categoryFilter || category === categoryFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    card.show();
+                } else {
+                    card.hide();
+                }
+            });
+        }
+
+        // Test database connection first
+        function testDatabaseConnection() {
+            return fetch('/Student/TestDatabaseConnection')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Database test result:', data);
+                    return data.success;
+                })
+                .catch(error => {
+                    console.error('Database test error:', error);
+                    return false;
+                });
+        }
+
+        // Enrollment Functionality
+        function enrollInCourse(courseId, courseTitle, studentId) {
+            // Show loading modal
+            $('#loadingModal').modal('show');
+
+            // Disable the button to prevent double-clicking
+            const button = $(`button[data-course-id="${courseId}"]`);
+            button.prop('disabled', true);
+            button.html('<i class="fas fa-spinner fa-spin me-2"></i>Enrolling...');
+
+            // Validate student ID
+            if (!studentId || studentId === '') {
+                $('#loadingModal').modal('hide');
+                alert('Student ID not found. Please refresh the page and try again.');
+                button.prop('disabled', false);
+                button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                return;
+            }
+            
+            // Get anti-forgery token
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            
+            if (!token) {
+                $('#loadingModal').modal('hide');
+                alert('Security token not found. Please refresh the page and try again.');
+                button.prop('disabled', false);
+                button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                return;
+            }
+
+            const enrollmentData = {
+                CourseId: parseInt(courseId),
+                StudentId: studentId
+            };
+
+            // Test database connection first
+            testDatabaseConnection().then(dbOk => {
+                if (!dbOk) {
+                    $('#loadingModal').modal('hide');
+                    alert('Database connection failed. Please try again later.');
+                    button.prop('disabled', false);
+                    button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                    return;
+                }
+                
+                // Proceed with enrollment
+                proceedWithEnrollment();
+            });
+
+            function proceedWithEnrollment() {
+                console.log('Sending enrollment data:', enrollmentData);
+                console.log('Token:', token);
+                console.log('JSON string:', JSON.stringify(enrollmentData));
+                
+                // Additional validation
+                if (!enrollmentData.CourseId || enrollmentData.CourseId <= 0) {
+                    $('#loadingModal').modal('hide');
+                    alert('Invalid course ID. Please refresh the page and try again.');
+                    button.prop('disabled', false);
+                    button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                    return;
+                }
+                
+                fetch('/Student/EnrollInCourse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(enrollmentData)
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    $('#loadingModal').modal('hide');
+                    
+                    if (data.success) {
+                        // Show success modal
+                        $('#enrolledCourseTitle').text(courseTitle);
+                        $('#enrollmentSuccessModal').modal('show');
+                        
+                        // Remove the course card from the view
+                        button.closest('.course-card-wrapper').fadeOut();
+                        
+                        // Update course count
+                        const currentCount = parseInt($('.stats-number').first().text());
+                        $('.stats-number').first().text(currentCount - 1);
+                    } else {
+                        // Show error message
+                        alert('Error: ' + (data.message || 'Failed to enroll in course'));
+                        
+                        // Re-enable the button
+                        button.prop('disabled', false);
+                        button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                    }
+                })
+                .catch(error => {
+                    $('#loadingModal').modal('hide');
+                    console.error('Enrollment error:', error);
+                    alert('Error enrolling in course. Please try again.');
+                    
+                    // Re-enable the button
+                    button.prop('disabled', false);
+                    button.html('<i class="fas fa-plus-circle me-2"></i>Enroll Now');
+                });
+            }
+        }
+    </script>
+}
+
+<style>
+.course-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.course-card .card-img-top {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.course-card .card-img-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover .card-img-top::before {
+    transform: translateX(0);
+}
+
+.enroll-btn {
+    transition: all 0.2s;
+}
+
+.enroll-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.enroll-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#courseSearch {
+    border-radius: 8px 0 0 8px;
+}
+
+#categoryFilter {
+    border-radius: 8px;
+}
+</style> 

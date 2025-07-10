@@ -1,0 +1,357 @@
+@model LMSApp.Models.ViewModels.FeedbackViewModel
+@{
+    ViewData["Title"] = "Course Feedback";
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="text-gradient mb-2"><i class="fas fa-comment-dots me-2"></i>Course Feedback</h2>
+                    <p class="text-muted mb-0">Share your thoughts and help us improve our courses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Feedback Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-edit me-2"></i>Submit New Feedback</h6>
+                </div>
+                <div class="card-body">
+                    <form id="feedbackForm" asp-action="SubmitFeedback" method="post">
+                        <div class="mb-4">
+                            <label class="form-label">Select Course</label>
+                            <select class="form-select" id="courseSelect" name="CourseId" required>
+                                <option value="">Choose a course to provide feedback for...</option>
+                                @foreach (var enrollment in ViewBag.EnrolledCourses ?? new List<dynamic>())
+                                {
+                                    <option value="@enrollment.CourseId">@enrollment.CourseTitle</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Rating</label>
+                            <div class="rating-container">
+                                <div class="star-rating" id="starRating">
+                                    <i class="fas fa-star" data-rating="1"></i>
+                                    <i class="fas fa-star" data-rating="2"></i>
+                                    <i class="fas fa-star" data-rating="3"></i>
+                                    <i class="fas fa-star" data-rating="4"></i>
+                                    <i class="fas fa-star" data-rating="5"></i>
+                                </div>
+                                <input type="hidden" id="ratingInput" name="Rating" value="0" required />
+                                <small class="text-muted d-block mt-2">Click on the stars to rate the course</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Your Feedback</label>
+                            <textarea class="form-control" id="commentsInput" name="Comments" rows="6" 
+                                      placeholder="Share your experience with this course. What did you like? What could be improved? Your feedback helps us create better learning experiences." 
+                                      maxlength="500" required></textarea>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-muted">Be specific and constructive in your feedback</small>
+                                <small class="text-muted"><span id="charCount">0</span>/500 characters</small>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Guidelines & History -->
+        <div class="col-lg-4">
+            <!-- Feedback Guidelines -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Feedback Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <div class="feedback-tips">
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Be specific about what you liked or didn't like</small>
+                        </div>
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Mention the instructor's teaching style</small>
+                        </div>
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Comment on course materials and content</small>
+                        </div>
+                        <div class="tip-item mb-3">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Suggest improvements constructively</small>
+                        </div>
+                        <div class="tip-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Share your overall learning experience</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Your Feedback History -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Your Feedback History</h6>
+                </div>
+                <div class="card-body">
+                    <div id="feedbackHistory">
+                        <div class="text-center py-3">
+                            <i class="fas fa-spinner fa-spin text-muted"></i>
+                            <p class="text-muted mt-2">Loading your feedback history...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Success Modal -->
+<div class="modal fade" id="feedbackSuccessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Feedback Submitted!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                    <h5>Thank You!</h5>
+                    <p class="text-muted">Your feedback has been submitted successfully. We appreciate your input and will use it to improve our courses.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Star Rating Functionality
+            $('.star-rating i').hover(
+                function() {
+                    const rating = $(this).data('rating');
+                    highlightStars(rating);
+                },
+                function() {
+                    const selectedRating = $('#ratingInput').val();
+                    highlightStars(selectedRating);
+                }
+            );
+
+            $('.star-rating i').click(function() {
+                const rating = $(this).data('rating');
+                $('#ratingInput').val(rating);
+                highlightStars(rating);
+            });
+
+            // Character Counter
+            $('#commentsInput').on('input', function() {
+                const length = $(this).val().length;
+                $('#charCount').text(length);
+                
+                if (length > 450) {
+                    $('#charCount').addClass('text-warning');
+                } else {
+                    $('#charCount').removeClass('text-warning');
+                }
+            });
+
+            // Form Submission
+            $('#feedbackForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const courseId = $('#courseSelect').val();
+                const rating = $('#ratingInput').val();
+                const comments = $('#commentsInput').val();
+
+                if (!courseId) {
+                    alert('Please select a course');
+                    return;
+                }
+
+                if (rating == 0) {
+                    alert('Please provide a rating');
+                    return;
+                }
+
+                if (!comments.trim()) {
+                    alert('Please provide feedback comments');
+                    return;
+                }
+
+                // Disable submit button
+                $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Submitting...');
+
+                // Submit feedback
+                const formData = {
+                    courseId: courseId,
+                    rating: rating,
+                    comments: comments
+                };
+
+                fetch('/Student/SubmitFeedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        $('#feedbackSuccessModal').modal('show');
+                        $('#feedbackForm')[0].reset();
+                        $('#ratingInput').val(0);
+                        highlightStars(0);
+                        $('#charCount').text('0');
+                        loadFeedbackHistory();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error submitting feedback. Please try again.');
+                })
+                .finally(() => {
+                    $('#submitBtn').prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Submit Feedback');
+                });
+            });
+
+            // Load feedback history on page load
+            loadFeedbackHistory();
+        });
+
+        function highlightStars(rating) {
+            $('.star-rating i').removeClass('text-warning');
+            $('.star-rating i').each(function(index) {
+                if (index < rating) {
+                    $(this).addClass('text-warning');
+                }
+            });
+        }
+
+        function loadFeedbackHistory() {
+            fetch('/Student/GetFeedbackHistory')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.feedback.length > 0) {
+                        let html = '';
+                        data.feedback.forEach(item => {
+                            html += `
+                                <div class="feedback-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">${item.courseTitle}</h6>
+                                        <small class="text-muted">${new Date(item.submittedAt).toLocaleDateString()}</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        ${generateStars(item.rating)}
+                                    </div>
+                                    <p class="mb-0 small">${item.comments}</p>
+                                </div>
+                            `;
+                        });
+                        $('#feedbackHistory').html(html);
+                    } else {
+                        $('#feedbackHistory').html(`
+                            <div class="text-center py-3">
+                                <i class="fas fa-comment-slash text-muted fa-2x mb-2"></i>
+                                <p class="text-muted mb-0">No feedback submitted yet</p>
+                            </div>
+                        `);
+                    }
+                })
+                .catch(error => {
+                    $('#feedbackHistory').html(`
+                        <div class="text-center py-3">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                            <p class="text-muted mb-0">Error loading feedback history</p>
+                        </div>
+                    `);
+                });
+        }
+
+        function generateStars(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    stars += '<i class="fas fa-star text-warning"></i>';
+                } else {
+                    stars += '<i class="fas fa-star text-muted"></i>';
+                }
+            }
+            return stars;
+        }
+    </script>
+}
+
+<style>
+.star-rating {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.star-rating i {
+    transition: color 0.2s;
+    margin-right: 0.25rem;
+}
+
+.star-rating i:hover {
+    transform: scale(1.1);
+}
+
+.feedback-tips .tip-item {
+    display: flex;
+    align-items: flex-start;
+}
+
+.feedback-tips .tip-item i {
+    margin-top: 0.125rem;
+}
+
+.feedback-item {
+    background: #f8f9fa;
+    transition: background-color 0.2s;
+}
+
+.feedback-item:hover {
+    background: #e9ecef;
+}
+
+#charCount.text-warning {
+    font-weight: bold;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+</style> 

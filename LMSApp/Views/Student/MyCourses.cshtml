@@ -1,0 +1,244 @@
+@model IEnumerable<LMSApp.Models.ViewModels.EnrollmentViewModel>
+@{
+    ViewData["Title"] = "My Courses";
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="text-gradient mb-2"><i class="fas fa-book-open me-2"></i>My Courses</h2>
+                    <p class="text-muted mb-0">Track your learning progress and access course materials</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count()</div>
+                    <div class="stats-label">Total Courses</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count(e => e.CompletionStatus == "Completed")</div>
+                    <div class="stats-label">Completed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count(e => e.CompletionStatus == "In Progress")</div>
+                    <div class="stats-label">In Progress</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stats-number">@Model.Count(e => e.CompletionStatus == "Pending")</div>
+                    <div class="stats-label">Pending</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Cards -->
+    <div class="row">
+        @if (Model.Any())
+        {
+            @foreach (var enrollment in Model)
+            {
+                <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                    <div class="card course-card h-100">
+                        <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height: 160px;">
+                            <i class="fas fa-graduation-cap text-white" style="font-size: 3rem;"></i>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold mb-2">@enrollment.CourseTitle</h5>
+                            
+                            <!-- Progress Section -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Progress</span>
+                                    <span class="fw-bold text-primary">
+                                        @{
+                                            var progressPercentage = enrollment.CompletionStatus == "Completed" ? 100 : 
+                                                                   enrollment.CompletionStatus == "In Progress" ? 50 : 0;
+                                        }
+                                        @progressPercentage%
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" style="width: @progressPercentage%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Course Details -->
+                            <div class="mb-3">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Status</small>
+                                        <span class="badge bg-@(enrollment.CompletionStatus == "Completed" ? "success" : enrollment.CompletionStatus == "In Progress" ? "warning" : "secondary")">
+                                            @enrollment.CompletionStatus
+                                        </span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Enrolled</small>
+                                        <small class="fw-medium">@enrollment.EnrolledOn.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="viewCourseDetails(@enrollment.CourseId, '@enrollment.CourseTitle')">
+                                    <i class="fas fa-eye me-2"></i>View Course
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="viewCourseMaterials(@enrollment.CourseId)">
+                                    <i class="fas fa-file-alt me-2"></i>View Materials
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No courses enrolled yet</h4>
+                        <p class="text-muted">Start your learning journey by enrolling in a course!</p>
+                        <a href="@Url.Action("EnrollNewCourses", "Student")" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Browse Available Courses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Course Detail Modal -->
+<div class="modal fade" id="courseDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="courseDetailTitle">Course Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courseDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course Materials Modal -->
+<div class="modal fade" id="courseMaterialsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Course Materials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courseMaterialsContent">
+                <!-- Materials will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function viewCourseDetails(courseId, courseTitle) {
+            // Show loading state
+            $('#courseDetailTitle').text(courseTitle);
+            $('#courseDetailContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2">Loading course details...</p></div>');
+            $('#courseDetailModal').modal('show');
+
+            // Load course details via AJAX
+            fetch(`/Student/GetCourseDetails/${courseId}`)
+                .then(response => response.text())
+                .then(html => {
+                    $('#courseDetailContent').html(html);
+                })
+                .catch(error => {
+                    $('#courseDetailContent').html('<div class="alert alert-danger">Error loading course details. Please try again.</div>');
+                });
+        }
+
+        function viewCourseMaterials(courseId) {
+            // Show loading state
+            $('#courseMaterialsContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2">Loading materials...</p></div>');
+            $('#courseMaterialsModal').modal('show');
+
+            // Load course materials via AJAX
+            fetch(`/Student/GetCourseMaterials/${courseId}`)
+                .then(response => response.text())
+                .then(html => {
+                    $('#courseMaterialsContent').html(html);
+                })
+                .catch(error => {
+                    $('#courseMaterialsContent').html('<div class="alert alert-danger">Error loading materials. Please try again.</div>');
+                });
+        }
+
+        function submitFeedback(courseId) {
+            const rating = document.getElementById('courseRating').value;
+            const feedback = document.getElementById('courseFeedback').value;
+
+            if (!rating || !feedback.trim()) {
+                alert('Please provide both rating and feedback.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('courseId', courseId);
+            formData.append('rating', rating);
+            formData.append('feedback', feedback);
+
+            fetch('/Student/SubmitCourseFeedback', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Feedback submitted successfully!');
+                    $('#courseDetailModal').modal('hide');
+                } else {
+                    alert('Error submitting feedback: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error submitting feedback. Please try again.');
+            });
+        }
+    </script>
+} 

@@ -15,5 +15,9 @@ namespace LMSApp.Models
 
         public bool IsActive { get; set; } = true;
 
+        // Navigation properties
+        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public ICollection<Course> CreatedCourses { get; set; } = new List<Course>();
+        public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     }
 }

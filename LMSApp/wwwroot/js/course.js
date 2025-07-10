@@ -29,14 +29,18 @@ function loadCategories() {
         url: '/api/CourseApi/categories',
         method: 'GET',
         success: function(response) {
+            console.log('Categories API response:', response);
             if (response.success) {
                 populateCategorySelects(response.data);
             } else {
                 console.error('Failed to load categories:', response.message);
+                showAlert('danger', 'Failed to load categories: ' + response.message);
             }
         },
         error: function(xhr, status, error) {
             console.error('Error loading categories:', error);
+            console.error('Response:', xhr.responseText);
+            showAlert('danger', 'Error loading categories. Please refresh the page.');
         }
     });
 }
@@ -47,14 +51,22 @@ function populateCategorySelects(categories) {
     
     // Populate main category select
     const mainSelect = $('#categorySelect');
-    mainSelect.find('option:not(:first)').remove();
-    
-    categories.forEach(function(category) {
-        mainSelect.append(`<option value="${category.id}">${category.name}</option>`);
-    });
+    if (mainSelect.length === 0) {
+        console.warn('Main category select not found');
+    } else {
+        mainSelect.find('option:not(:first)').remove();
+        
+        categories.forEach(function(category) {
+            mainSelect.append(`<option value="${category.id}">${category.name}</option>`);
+        });
+        console.log('Main category select populated with', categories.length, 'categories');
+    }
     
     // Populate category selects for existing courses
-    $('[id^="categorySelect_"]').each(function() {
+    const courseSelects = $('[id^="categorySelect_"]');
+    console.log('Found', courseSelects.length, 'course category selects');
+    
+    courseSelects.each(function() {
         const select = $(this);
         const courseId = select.attr('id').replace('categorySelect_', '');
         
@@ -66,10 +78,10 @@ function populateCategorySelects(categories) {
         });
         
         // Set the current category if available
-        const currentCategory = select.data('current-category');
-        console.log(`Setting category for course ${courseId}: ${currentCategory}`);
-        if (currentCategory && currentCategory !== '0' && currentCategory !== '') {
-            select.val(currentCategory);
+        let currentCategory = select.data('current-category');
+        console.log(`Setting category for course ${courseId}:`, currentCategory, typeof currentCategory);
+        if (currentCategory !== undefined && currentCategory !== null && currentCategory !== '' && currentCategory !== '0') {
+            select.val(currentCategory.toString());
         }
     });
 }
@@ -194,19 +206,22 @@ function openMaterialsModal(courseId) {
     // Store course ID for later use
     $('#materialsModal').data('course-id', courseId);
     
+    // Show modal immediately
+    const modal = new bootstrap.Modal(document.getElementById('materialsModal'));
+    modal.show();
+    console.log('Modal should now be visible');
+    
     // Load course materials
     loadCourseMaterials(courseId);
     
-    // Show modal
-    $('#materialsModal').modal('show');
-    
-    // Handle modal close event
-    $('#materialsModal').off('hidden.bs.modal').on('hidden.bs.modal', function() {
-        // Refresh the course list to update material counts
-        setTimeout(function() {
-            location.reload();
-        }, 500);
-    });
+    // If content is not loaded after 2 seconds, show an error
+    setTimeout(function() {
+        const content = $('#materialsContent').html();
+        if (!content || content.trim() === '') {
+            $('#materialsContent').html('<div class="alert alert-danger">Failed to load materials. Please try again or check your connection.</div>');
+            console.error('Materials content did not load in time.');
+        }
+    }, 2000);
 }
 
 // Load course materials
@@ -217,14 +232,17 @@ function loadCourseMaterials(courseId) {
         url: `/api/CourseApi/${courseId}`,
         method: 'GET',
         success: function(response) {
+            console.log('Course materials API response:', response);
             if (response.success) {
                 displayCourseMaterials(response.data, courseId);
             } else {
+                console.error('Failed to load course materials:', response.message);
                 showAlert('danger', response.message);
             }
         },
         error: function(xhr, status, error) {
             console.error('Error loading course materials:', error);
+            console.error('Response:', xhr.responseText);
             showAlert('danger', 'Failed to load course materials.');
         }
     });
@@ -232,9 +250,21 @@ function loadCourseMaterials(courseId) {
 
 // Display course materials in modal
 function displayCourseMaterials(course, courseId) {
+    // Support both Materials and materials casing from backend
+    const materialsArr = course.Materials || course.materials || [];
     console.log('Displaying materials for course:', course);
-    
+    console.log('Course materials:', materialsArr);
+    // Debug log for troubleshooting
+    if (Array.isArray(materialsArr)) {
+        console.log('DEBUG: Materials array:', materialsArr);
+    } else {
+        console.log('DEBUG: Materials property is not an array:', materialsArr);
+    }
     const materialsContent = $('#materialsContent');
+    if (materialsContent.length === 0) {
+        console.error('Materials content container not found');
+        return;
+    }
     let html = `
         <div class="mb-4">
             <h6 class="text-primary">
@@ -243,7 +273,6 @@ function displayCourseMaterials(course, courseId) {
             </h6>
             <p class="text-muted">${course.description}</p>
         </div>
-        
         <div class="mb-4">
             <h6>
                 <i class="fas fa-file-upload"></i>
@@ -268,29 +297,25 @@ function displayCourseMaterials(course, courseId) {
                 </div>
             </form>
         </div>
+        <div class="mb-4">
+            <h6>
+                <i class="fas fa-list"></i>
+                Current Materials (${materialsArr.length})
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
-    
-    if (course.materials && course.materials.length > 0) {
-        html += `
-            <div>
-                <h6>
-                    <i class="fas fa-list"></i>
-                    Current Materials (${course.materials.length})
-                </h6>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Title</th>
-                                <th>Type</th>
-                                <th>Added</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        course.materials.forEach(function(material) {
+    if (materialsArr.length > 0) {
+        materialsArr.forEach(function(material) {
             // Format the date safely
             let formattedDate = 'Unknown';
             if (material.createdAt) {
@@ -307,7 +332,6 @@ function displayCourseMaterials(course, courseId) {
                     console.error('Error formatting date:', e);
                 }
             }
-            
             html += `
                 <tr>
                     <td>${material.title}</td>
@@ -324,25 +348,18 @@ function displayCourseMaterials(course, courseId) {
                 </tr>
             `;
         });
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
     } else {
         html += `
-            <div class="text-center text-muted py-4">
-                <i class="fas fa-file fa-3x mb-3"></i>
-                <h6>No materials uploaded yet</h6>
-                <p>Upload the first material using the form above.</p>
-            </div>
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <i class="fas fa-file fa-2x mb-2"></i>
+                    <div>No materials uploaded yet. Upload the first material using the form above.</div>
+                </td>
+            </tr>
         `;
     }
-    
+    html += `</tbody></table></div></div>`;
     materialsContent.html(html);
-    
     // Handle material form submission
     $('#addMaterialForm').on('submit', function(e) {
         e.preventDefault();
@@ -353,10 +370,8 @@ function displayCourseMaterials(course, courseId) {
 // Add course material
 function addCourseMaterial(courseId) {
     console.log('Adding material for course:', courseId);
-    
     const form = $('#addMaterialForm')[0];
     const formData = new FormData(form);
-    
     $.ajax({
         url: `/api/CourseApi/${courseId}/materials`,
         method: 'POST',
@@ -364,35 +379,20 @@ function addCourseMaterial(courseId) {
         processData: false,
         contentType: false,
         success: function(response) {
-            if (response.success) {
+            if (response.success && response.data) {
                 // Show success message
                 showAlert('success', 'Material added successfully!');
-                
                 // Reset form
                 form.reset();
-                
-                // Reload materials
-                loadCourseMaterials(courseId);
-                
-                // Update the material count in the main table
-                updateCourseMaterialCount(courseId);
-                
-                // Show success message in modal
-                $('#materialsContent').prepend(`
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="fas fa-check-circle"></i>
-                        Material "${response.data.title}" added successfully!
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `);
-                
-                // Auto-dismiss modal alert after 3 seconds
-                setTimeout(function() {
-                    $('#materialsContent .alert').fadeOut();
-                }, 3000);
-                
+                // Immediately append the new material to the table if it exists
+                if (response.data && response.data.material) {
+                    appendMaterialToTable(response.data.material);
+                } else {
+                    // Fallback: reload all materials if no material data returned
+                    loadCourseMaterials(courseId);
+                }
             } else {
-                showAlert('danger', response.message);
+                showAlert('danger', response.message || 'Failed to add material.');
             }
         },
         error: function(xhr, status, error) {
@@ -400,6 +400,47 @@ function addCourseMaterial(courseId) {
             showAlert('danger', 'Failed to add material. Please try again.');
         }
     });
+}
+
+// Append a new material row to the materials table in the modal
+function appendMaterialToTable(material) {
+    const tableBody = $('#materialsContent table tbody');
+    if (tableBody.length === 0) {
+        // If table doesn't exist, reload all materials
+        return;
+    }
+    // Format the date safely
+    let formattedDate = 'Unknown';
+    if (material.createdAt) {
+        try {
+            const date = new Date(material.createdAt);
+            if (!isNaN(date.getTime())) {
+                formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+        } catch (e) {
+            console.error('Error formatting date:', e);
+        }
+    }
+    const rowHtml = `
+        <tr>
+            <td>${material.title}</td>
+            <td><span class="badge bg-secondary">${material.fileType}</span></td>
+            <td>${formattedDate}</td>
+            <td>
+                <a href="${material.filePath}" class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class="fas fa-download"></i>
+                </a>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteMaterial(${material.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    tableBody.append(rowHtml);
 }
 
 // Delete course material

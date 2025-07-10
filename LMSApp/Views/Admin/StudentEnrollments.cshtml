@@ -269,22 +269,74 @@
             modal.show();
         }
 
+        // Render enrollments in the modal
+        function displayUserEnrollments(enrollments, userId) {
+            const contentDiv = document.getElementById('enrollmentsContent');
+            if (!enrollments || enrollments.length === 0) {
+                contentDiv.innerHTML = `<div class='alert alert-info'>No enrollments found for this student.</div>`;
+                return;
+            }
+            let html = `<div class='table-responsive'><table class='table table-bordered'>
+                <thead><tr>
+                    <th>Course</th>
+                    <th>Enrolled On</th>
+                    <th>Status</th>
+                </tr></thead><tbody>`;
+            enrollments.forEach(e => {
+                html += `<tr>
+                    <td>${e.courseTitle}</td>
+                    <td>${e.enrolledOn ? new Date(e.enrolledOn).toLocaleDateString() : ''}</td>
+                    <td><span class='badge bg-${e.completionStatus === 'Completed' ? 'success' : (e.completionStatus === 'In Progress' ? 'warning' : 'secondary')}'>${e.completionStatus}</span></td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            contentDiv.innerHTML = html;
+        }
+
+        // Progress modal (placeholder, to be implemented)
         function openProgressModal(userId) {
             const contentDiv = document.getElementById('progressContent');
-            contentDiv.innerHTML = `
-                <div class="text-center text-muted">
-                    <i class="fas fa-chart-line fa-3x mb-3"></i>
-                    <h5>Student Progress Tracking</h5>
-                    <p>Detailed progress tracking will be implemented in the next phase.</p>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        This feature will show detailed progress for each enrolled course.
-                    </div>
-                </div>
-            `;
-            
+            contentDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading progress...</div>';
+            fetch(`/api/StudentApi/${userId}/progress`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayUserProgress(data.data, userId);
+                    } else {
+                        contentDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Failed to load progress'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading progress:', error);
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Failed to load progress. Please try again.</div>';
+                });
             const modal = new bootstrap.Modal(document.getElementById('progressModal'));
             modal.show();
+        }
+
+        function displayUserProgress(progressList, userId) {
+            const contentDiv = document.getElementById('progressContent');
+            if (!progressList || progressList.length === 0) {
+                contentDiv.innerHTML = `<div class='alert alert-info'>No progress data found for this student.</div>`;
+                return;
+            }
+            let html = `<div class='table-responsive'><table class='table table-bordered'>
+                <thead><tr>
+                    <th>Course</th>
+                    <th>Enrolled On</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                </tr></thead><tbody>`;
+            progressList.forEach(p => {
+                html += `<tr>
+                    <td>${p.courseTitle}</td>
+                    <td>${p.enrolledOn ? new Date(p.enrolledOn).toLocaleDateString() : ''}</td>
+                    <td><span class='badge bg-${p.completionStatus === 'Completed' ? 'success' : (p.completionStatus === 'In Progress' ? 'warning' : 'secondary')}'>${p.completionStatus}</span></td>
+                    <td><div class='progress' style='height: 8px;'><div class='progress-bar bg-primary' style='width: ${p.progressPercentage}%;'></div></div><small>${p.progressPercentage}%</small></td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            contentDiv.innerHTML = html;
         }
     </script>
 } 

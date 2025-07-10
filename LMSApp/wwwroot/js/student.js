@@ -645,4 +645,106 @@ function showButtonLoading(button) {
 function resetButton(button, originalText) {
     button.innerHTML = originalText;
     button.disabled = false;
+}
+
+// Student Portal JavaScript
+// Minimal JavaScript for sidebar functionality
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Sidebar toggle functionality
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
+        });
+    }
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth <= 992) {
+            if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('show');
+            }
+        }
+    });
+    
+    // Auto-hide alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            if (alert.parentNode) {
+                alert.classList.remove('show');
+                setTimeout(function() {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 150);
+            }
+        }, 5000);
+    });
+    
+    // Add fade-in animation to cards
+    const cards = document.querySelectorAll('.card, .stats-card');
+    cards.forEach(function(card, index) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(function() {
+            card.style.transition = 'all 0.6s ease-out';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Utility function for showing notifications (if needed)
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function toggleUserActive(userId, makeActive) {
+    var action = makeActive ? 'activate' : 'inactivate';
+    var confirmMsg = makeActive
+        ? 'Are you sure you want to make this user active?'
+        : 'Are you sure you want to make this user inactive?';
+    if (confirm(confirmMsg)) {
+        fetch('/Admin/ToggleUserActive', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            },
+            body: JSON.stringify({ userId: userId, isActive: makeActive })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('User status updated successfully.', 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                showNotification(data.message || 'Failed to update user status.', 'danger');
+            }
+        })
+        .catch(() => {
+            showNotification('Error updating user status.', 'danger');
+        });
+    }
 } 

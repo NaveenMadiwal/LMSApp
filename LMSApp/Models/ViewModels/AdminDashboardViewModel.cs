@@ -10,4 +10,11 @@ namespace LMSApp.Models.ViewModels
         public int TotalCategories { get; set; }
     }
 
+    public class InstructorDashboardViewModel
+    {
+        public int CourseCount { get; set; }
+        public int EnrolledStudentCount { get; set; }
+        public List<CourseListViewModel> RecentCourses { get; set; } = new List<CourseListViewModel>();
+        public List<EnrollmentViewModel> RecentEnrollments { get; set; } = new List<EnrollmentViewModel>();
+    }
 }

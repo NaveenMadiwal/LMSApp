@@ -299,6 +299,31 @@ namespace LMSApp.Controllers.Api
             }
         }
 
+        [HttpGet("{userId}/progress")]
+        public async Task<IActionResult> GetUserProgress(string userId)
+        {
+            try
+            {
+                var enrollments = await _context.Enrollments
+                    .Include(e => e.Course)
+                    .Where(e => e.StudentId == userId && e.IsActive)
+                    .ToListAsync();
+
+                var progressList = enrollments.Select(e => new {
+                    CourseTitle = e.Course?.Title ?? "N/A",
+                    CompletionStatus = e.CompletionStatus,
+                    EnrolledOn = e.EnrolledOn,
+                    ProgressPercentage = e.CompletionStatus == "Completed" ? 100 : 0
+                }).ToList();
+
+                return Ok(new { success = true, data = progressList });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error retrieving progress", error = ex.Message });
+            }
+        }
+
         [HttpGet("roles")]
         public async Task<IActionResult> GetRoles()
         {

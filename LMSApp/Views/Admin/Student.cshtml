@@ -247,29 +247,21 @@
                                 </td>
                                 <td style="padding: 1.5rem;">
                                     <select class="form-control" name="RoleType" required>
+                                        @if (user.RoleType == "Admin")
+                                        {
+                                         <option value="Admin" selected="selected">Admin</option>
+                                        }
                                         @if (user.RoleType == "Student")
                                         {
                                             <option value="Student" selected="selected">Student</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="Student">Student</option>
-                                        }
+                                        } 
                                         @if (user.RoleType == "Instructor")
                                         {
                                             <option value="Instructor" selected="selected">Instructor</option>
-                                        }
+                                        } 
                                         else
                                         {
-                                            <option value="Instructor">Instructor</option>
-                                        }
-                                        @if (user.RoleType == "Admin")
-                                        {
-                                            <option value="Admin" selected="selected">Admin</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="Admin">Admin</option>
+                                            <option value="Student" selected="selected">Student</option>
                                         }
                                     </select>
                                 </td>
@@ -347,11 +339,20 @@
                                                 Admin Info
                                             </button>
                                         }
-                                        <a asp-action="DeleteStudent" asp-route-id="@user.Id"
-                                           class="btn btn-danger delete-student-btn">
-                                            <i class="fas fa-trash icon"></i>
-                                            Delete
-                                        </a>
+                                        @if (user.IsActive)
+                                        {
+                                            <button type="button" class="btn btn-danger" onclick="toggleUserActive('@user.Id', false)">
+                                                <i class="fas fa-user-slash icon"></i>
+                                                Inactive
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-success" onclick="toggleUserActive('@user.Id', true)">
+                                                <i class="fas fa-user-check icon"></i>
+                                                Active
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                                 </form>
